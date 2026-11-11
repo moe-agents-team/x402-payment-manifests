@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>x402 Workbench</title>
+  <style>
+    :root {
+      --bg: #0b0f19; --surface: #101626; --card: rgba(18,25,41,0.75);
+      --primary: #6366f1; --mint: #10b981; --pink: #ec4899;
+      --text: #f1f5f9; --muted: #94a3b8; --border: rgba(99,102,241,0.18);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; font-size: 14px; }
+    
+    /* 100vh Master-Detail 单屏, 左260px导航 */
+    .nav { width: 260px; min-width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .nav-header { padding: 20px; font-weight: bold; border-bottom: 1px solid var(--border); color: var(--mint); font-size: 16px; }
+    .nav-item { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--muted); }
+    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    .nav-item.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    
+    .main { flex: 1; display: flex; flex-direction: column; overflow: auto; padding: 30px; background: var(--bg); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    h2 { margin-bottom: 20px; color: var(--text); font-size: 20px; }
+    pre { background: #000; padding: 15px; border-radius: 6px; overflow: auto; color: var(--mint); font-family: monospace; font-size: 13px; margin-top: 10px; border: 1px solid var(--border); }
+    
+    button { background: var(--primary); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    button:hover { opacity: 0.9; transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    
+    input, select { background: #000; color: #fff; border: 1px solid var(--border); padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 15px; font-family: monospace; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: var(--primary); }
+    
+    .flex { display: flex; gap: 10px; align-items: flex-start; }
+    .flex input { margin-bottom: 0; flex: 1; }
+    
+    .log { margin-top: 15px; font-family: monospace; font-size: 13px; white-space: pre-wrap; color: var(--muted); line-height: 1.6; background: #07090e; padding: 15px; border-radius: 6px; border: 1px solid var(--border); min-height: 100px; }
+    .pass { color: var(--mint); font-weight: bold; }
+    .fail { color: var(--pink); font-weight: bold; }
+    
+    label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <!-- Master Rail -->
+  <div class="nav">
+    <div class="nav-header">x402 Workbench</div>
+    <div class="nav-item active" onclick="switchTab(1)">Tab 1: Manifest Schema Diagnostic</div>
+    <div class="nav-item" onclick="switchTab(2)">Tab 2: Base USDC Cashier</div>
+  </div>
+  
+  <!-- Detail Stage -->
+  <div class="main">
+    
+    <!-- Tab 1 -->
+    <div id="tab1" class="tab-content active">
+      <h2>x402 Manifest Schema 诊断器 + 配置生成</h2>
+      <div class="card">
+        <button onclick="diagnose()">运行诊断 (Run Diagnostic)</button>
+        <div id="diag-out" class="log">等待运行...</div>
+        
+        <label style="margin-top: 20px;">cURL 配置</label>
+        <pre id="curl-out">...</pre>
+        
+        <label style="margin-top: 20px;">MCP 配置生成</label>
+        <pre id="mcp-out">...</pre>
+      </div>
+    </div>
+    
+    <!-- Tab 2 -->
+    <div id="tab2" class="tab-content">
+      <h2>Base Mainnet USDC 纯前端验钞机 (5断言)</h2>
+      <div class="card">
+        <label>收款档位 (USDC):</label>
+        <select id="tierSelect">
+          <option value="100000">$0.10 (极速探针)</option>
+          <option value="1000000">$1.00 (痛点修复)</option>
+          <option value="9900000">$9.90 (旗舰包)</option>
+        </select>
+        
+        <label>输入交易哈希 (TxHash):</label>
+        <div class="flex">
+          <input type="text" id="txHash" placeholder="0x..." />
+          <button onclick="verifyTx()">执行验真 (Verify)</button>
+        </div>
+        <div id="verify-log" class="log">直连 Base 公共 RPC 池，等待执行...</div>
+      </div>
+    </div>
+    
+  </div>
+
+  <script>
+    function switchTab(t) {
+      document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === t - 1));
+      document.querySelectorAll('.tab-content').forEach((el, i) => el.classList.toggle('active', i === t - 1));
+    }
+    
+    async function diagnose() {
+      const logEl = document.getElementById('diag-out');
+      logEl.innerHTML = "Fetching /.well-known/x402.json...\n";
+      try {
+        const res = await fetch('.well-known/x402.json');
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
+        logEl.innerHTML += "<span class='pass'>✔ JSON Parsed</span>\n";
+        
+        let valid = true;
+        let expectedTreasury = "0xf270041f431efc7cc91cad83f9605e3f2ee96176";
+        let actualTreasury = json.payment_methods?.[0]?.treasury || json.treasury;
+        
+        if (actualTreasury && actualTreasury.toLowerCase() === expectedTreasury.toLowerCase()) {
+          logEl.innerHTML += "<span class='pass'>✔ Treasury matches expected.</span>\n";
+        } else {
+          logEl.innerHTML += "<span class='fail'>✖ Treasury mismatch or missing! Found: " + actualTreasury + "</span>\n"; 
+          valid = false;
+        }
+        
+        let chainId = json.payment_methods?.[0]?.chainId || json.chainId;
+        if (chainId === 8453) {
+          logEl.innerHTML += "<span class='pass'>✔ ChainId matches Base (8453).</span>\n";
+        } else {
+          logEl.innerHTML += "<span class='fail'>✖ ChainId mismatch!</span>\n"; 
+          valid = false;
+        }
+        
+        if (valid) {
+          const host = window.location.host || "<YOUR-DOMAIN>";
+          document.getElementById('curl-out').innerText = `curl -s https://${host}/.well-known/x402.json | jq .`;
+          document.getElementById('mcp-out').innerText = JSON.stringify({
+            mcpServers: {
+              "x402-payment": {
+                "command": "npx",
+                "args": ["-y", "@moe-agents/x402-mcp", "--treasury", actualTreasury]
+              }
+            }
+          }, null, 2);
+        } else {
+          logEl.innerHTML += "\n<span class='fail'>诊断未通过，停止生成配置。</span>\n";
+        }
+      } catch (e) {
+        logEl.innerHTML += `<span class='fail'>✖ Failed: ${e.message}</span>\n`;
+      }
+    }
+
+    const RPC_URLS = [
+      "https://mainnet.base.org", 
+      "https://base.publicnode.com", 
+      "https://base.llamarpc.com"
+    ];
+    
+    async function callRpc(method, params) {
+      for (const rpc of RPC_URLS) {
+        try {
+          const res = await fetch(rpc, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params })
+          });
+          if (!res.ok) continue;
+          const json = await res.json();
+          if (!json.error) return json.result;
+        } catch (e) {
+          // ignore and try next
+        }
+      }
+      throw new Error("All public RPCs failed");
+    }
+
+    async function verifyTx() {
+      const hash = document.getElementById('txHash').value.trim();
+      const expectedAmount = parseInt(document.getElementById('tierSelect').value, 10);
+      const logEl = document.getElementById('verify-log');
+      
+      if (!/^0x([A-Fa-f0-9]{64})$/.test(hash)) {
+        logEl.innerHTML = "<span class='fail'>✖ 无效的 TxHash 格式</span>";
+        return;
+      }
+      
+      const T = "0xf270041f431efc7cc91cad83f9605e3f2ee96176".toLowerCase();
+      const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".toLowerCase();
+      
+      logEl.innerHTML = `正在直连 Base RPC 验证 ${hash}...\n\n`;
+      
+      try {
+        const receipt = await callRpc("eth_getTransactionReceipt", [hash]);
+        const tx = await callRpc("eth_getTransactionByHash", [hash]);
+        
+        if (!receipt || !tx) throw new Error("Tx not found or pending");
+        
+        let pass = 0;
+        const assert = (cond, msg) => {
+          if (cond) { logEl.innerHTML += `<span class='pass'>✔ [Assert ${pass+1}] ${msg}</span>\n`; pass++; }
+          else { logEl.innerHTML += `<span class='fail'>✖ [Assert ${pass+1}] ${msg}</span>\n`; throw new Error("Assertion failed: " + msg); }
+        };
+
+        // 1. Tx Status
+        assert(parseInt(receipt.status, 16) === 1, "交易状态为成功 (Status = 1)");
+        
+        // 2. ChainId
+        assert(parseInt(tx.chainId, 16) === 8453, "交易所属网络为 Base 主网 (ChainId = 8453)");
+        
+        // 3. To Address is USDC
+        assert(tx.to && tx.to.toLowerCase() === USDC, "交互合约地址为合规的 USDC Token 智能合约");
+        
+        let foundTransfer = false;
+        let amountOk = false;
+        let foundAmount = 0;
+        
+        const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+        
+        for (const log of receipt.logs) {
+          if (log.address.toLowerCase() === USDC && log.topics[0] === transferTopic && log.topics.length === 3) {
+            const toHex = log.topics[2];
+            const toAddr = "0x" + toHex.slice(-40).toLowerCase();
+            if (toAddr === T) {
+              foundTransfer = true;
+              foundAmount = parseInt(log.data, 16);
+              if (foundAmount >= expectedAmount) amountOk = true;
+            }
+          }
+        }
+        
+        // 4. Transfer Event to Treasury
+        assert(foundTransfer, `在 Event Logs 中锁定到向硬编码金库 (${T}) 的 Transfer 记录`);
+        
+        // 5. Amount check
+        assert(amountOk, `Transfer 金额 (${foundAmount / 1e6} USDC) >= 预期入账金额 (${expectedAmount / 1e6} USDC)`);
+        
+        logEl.innerHTML += `\n<span class='pass' style='font-size:14px;'>🎉 验钞完成: 所有 5 项安全断言通过，准许后续履约发放！</span>\n`;
+      } catch (e) {
+        logEl.innerHTML += `\n<span class='fail'>验钞中止: ${e.message}</span>\n`;
+      }
+    }
+  </script>
+</body>
+</html>
