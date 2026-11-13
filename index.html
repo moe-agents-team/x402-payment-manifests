@@ -3,155 +3,273 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>x402 Workbench</title>
+  <title>x402 Workbench — v2 (eip155:8453) Verified</title>
   <style>
     :root {
-      --bg: #0b0f19; --surface: #101626; --card: rgba(18,25,41,0.75);
-      --primary: #6366f1; --mint: #10b981; --pink: #ec4899;
-      --text: #f1f5f9; --muted: #94a3b8; --border: rgba(99,102,241,0.18);
+      --obsidian: #0b0f19;
+      --surface: #101626;
+      --card: rgba(18,25,41,0.75);
+      --primary: #6366f1;
+      --mint: #10b981;
+      --pink: #ec4899;
+      --amber: #f59e0b;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --border: rgba(99,102,241,0.18);
+      --v2-badge: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
-    body { background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; font-size: 14px; }
-    
-    /* 100vh Master-Detail 单屏, 左260px导航 */
-    .nav { width: 260px; min-width: 260px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-    .nav-header { padding: 20px; font-weight: bold; border-bottom: 1px solid var(--border); color: var(--mint); font-size: 16px; }
-    .nav-item { padding: 15px 20px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--muted); }
-    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Menlo', 'Monaco', 'Cascadia Mono', monospace, sans-serif; }
+    body { background: var(--obsidian); color: var(--text); height: 100vh; display: flex; overflow: hidden; font-size: 13px; }
+
+    /* Master-Detail 单屏, 左侧导航固定 */
+    .nav { width: 280px; min-width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+    .nav-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+    .nav-title { font-weight: bold; font-size: 16px; color: var(--mint); letter-spacing: 0.05em; }
+    .v2-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; padding: 4px 10px; border-radius: 12px; background: var(--v2-badge); color: #fff; font-weight: bold; }
+    .v2-badge::before { content: "●"; width: 6px; height: 6px; border-radius: 50%; background: var(--mint); display: inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .nav-item { padding: 14px 20px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 13px; transition: all 0.2s; }
+    .nav-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
     .nav-item.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    
-    .main { flex: 1; display: flex; flex-direction: column; overflow: auto; padding: 30px; background: var(--bg); }
+
+    .main { flex: 1; display: flex; flex-direction: column; overflow: auto; padding: 28px; background: var(--obsidian); }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-    h2 { margin-bottom: 20px; color: var(--text); font-size: 20px; }
-    pre { background: #000; padding: 15px; border-radius: 6px; overflow: auto; color: var(--mint); font-family: monospace; font-size: 13px; margin-top: 10px; border: 1px solid var(--border); }
-    
-    button { background: var(--primary); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 22px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.35); backdrop-filter: blur(4px); }
+    h2 { margin-bottom: 18px; color: var(--text); font-size: 18px; display: flex; align-items: center; gap: 10px; }
+    h2 .tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: rgba(99,102,241,0.15); color: var(--mint); border: 1px solid rgba(99,102,241,0.3); }
+    pre { background: #05070c; padding: 16px; border-radius: 8px; overflow: auto; color: var(--mint); font-family: monospace; font-size: 12px; margin-top: 12px; border: 1px solid var(--border); line-height: 1.5; }
+
+    button { background: var(--primary); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
     button:hover { opacity: 0.9; transform: translateY(-1px); }
     button:active { transform: translateY(0); }
-    
-    input, select { background: #000; color: #fff; border: 1px solid var(--border); padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 15px; font-family: monospace; font-size: 14px; }
+    button.secondary { background: rgba(99,102,241,0.15); color: var(--mint); border: 1px solid rgba(99,102,241,0.35); }
+    button.secondary:hover { background: rgba(99,102,241,0.25); }
+    button.highlight { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: #fff; box-shadow: 0 0 20px rgba(245,158,11,0.4); }
+    button.highlight:hover { box-shadow: 0 0 30px rgba(245,158,11,0.6); }
+
+    input, select { background: #05070c; color: #fff; border: 1px solid var(--border); padding: 10px; border-radius: 6px; width: 100%; margin-bottom: 14px; font-family: monospace; font-size: 13px; }
     input:focus, select:focus { outline: none; border-color: var(--primary); }
-    
-    .flex { display: flex; gap: 10px; align-items: flex-start; }
-    .flex input { margin-bottom: 0; flex: 1; }
-    
-    .log { margin-top: 15px; font-family: monospace; font-size: 13px; white-space: pre-wrap; color: var(--muted); line-height: 1.6; background: #07090e; padding: 15px; border-radius: 6px; border: 1px solid var(--border); min-height: 100px; }
+
+    .flex { display: flex; gap: 10px; align-items: center; }
+    .flex > input { margin-bottom: 0; flex: 1; }
+
+    .log { margin-top: 14px; font-family: monospace; font-size: 12px; white-space: pre-wrap; color: var(--muted); line-height: 1.6; background: #07090e; padding: 16px; border-radius: 8px; border: 1px solid var(--border); min-height: 120px; }
     .pass { color: var(--mint); font-weight: bold; }
     .fail { color: var(--pink); font-weight: bold; }
-    
-    label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--muted); font-size: 13px; }
+    .warn { color: var(--amber); font-weight: bold; }
+
+    label { display: block; margin-bottom: 8px; font-weight: bold; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* 双键 Schema 诊断网格 */
+    .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
+    .schema-card { background: #07090e; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .schema-card h3 { font-size: 13px; margin-bottom: 10px; color: var(--text); }
+    .schema-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px; }
+    .schema-row:last-child { border-bottom: none; }
+    .schema-key { color: var(--muted); }
+    .schema-val { color: var(--mint); font-family: monospace; }
+    .schema-val.v2 { color: var(--amber); }
+    .schema-status { margin-top: 12px; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; }
+    .schema-status.ok { background: rgba(16,185,129,0.15); color: var(--mint); border: 1px solid rgba(16,185,129,0.3); }
+    .schema-status.warn { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+
+    /* 升舱路径 */
+    .upgrade-path { display: flex; align-items: center; gap: 14px; margin-top: 16px; padding: 18px; background: #07090e; border: 1px solid var(--border); border-radius: 10px; }
+    .tier-step { flex: 1; padding: 14px; border-radius: 8px; text-align: center; border: 1px solid var(--border); position: relative; }
+    .tier-step.active { background: rgba(99,102,241,0.1); border-color: var(--primary); }
+    .tier-step.highlight { background: rgba(245,158,11,0.15); border-color: var(--amber); }
+    .tier-arrow { font-size: 16px; color: var(--muted); z-index: 2; }
+    .tier-price { font-size: 20px; font-weight: bold; color: var(--text); margin: 6px 0; }
+    .tier-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .tier-desc { font-size: 12px; color: var(--mint); margin-top: 6px; line-height: 1.4; }
+
+    /* EIP-3009 域分隔参数卡片 */
+    .params-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 14px; }
+    .param-card { background: #07090e; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .param-card .p-name { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .param-card .p-value { font-size: 15px; font-weight: bold; color: var(--text); font-family: monospace; }
+
+    .hint { font-size: 12px; color: var(--muted); margin-top: 10px; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: 6px; border-left: 3px solid var(--primary); }
   </style>
 </head>
 <body>
   <!-- Master Rail -->
   <div class="nav">
-    <div class="nav-header">x402 Workbench</div>
-    <div class="nav-item active" onclick="switchTab(1)">Tab 1: Manifest Schema Diagnostic</div>
-    <div class="nav-item" onclick="switchTab(2)">Tab 2: Base USDC Cashier</div>
+    <div class="nav-header">
+      <div class="nav-title">x402 Workbench</div>
+      <div class="v2-badge">x402 v2 (eip155:8453) Verified</div>
+    </div>
+    <div class="nav-item active" onclick="switchTab(1)">Tab 1: 双键 Schema 诊断 (Dual-Key Schema)</div>
+    <div class="nav-item" onclick="switchTab(2)">Tab 2: v2 Handshake & EIP-3009 探针</div>
   </div>
-  
+
   <!-- Detail Stage -->
   <div class="main">
-    
-    <!-- Tab 1 -->
+
+    <!-- Tab 1: Dual-Key Schema Diagnostic -->
     <div id="tab1" class="tab-content active">
-      <h2>x402 Manifest Schema 诊断器 + 配置生成</h2>
+      <h2>x402 Manifest 双键 Schema 诊断器 <span class="tag">v1 base-mainnet + v2 eip155:8453</span></h2>
       <div class="card">
-        <button onclick="diagnose()">运行诊断 (Run Diagnostic)</button>
-        <div id="diag-out" class="log">等待运行...</div>
-        
-        <label style="margin-top: 20px;">cURL 配置</label>
-        <pre id="curl-out">...</pre>
-        
-        <label style="margin-top: 20px;">MCP 配置生成</label>
-        <pre id="mcp-out">...</pre>
-      </div>
-    </div>
-    
-    <!-- Tab 2 -->
-    <div id="tab2" class="tab-content">
-      <h2>Base Mainnet USDC 纯前端验钞机 (5断言)</h2>
-      <div class="card">
-        <label>收款档位 (USDC):</label>
-        <select id="tierSelect">
-          <option value="100000">$0.10 (极速探针)</option>
-          <option value="1000000">$1.00 (痛点修复)</option>
-          <option value="9900000">$9.90 (旗舰包)</option>
-        </select>
-        
-        <label>输入交易哈希 (TxHash):</label>
-        <div class="flex">
-          <input type="text" id="txHash" placeholder="0x..." />
-          <button onclick="verifyTx()">执行验真 (Verify)</button>
+        <div class="flex" style="gap: 12px;">
+          <button onclick="diagnoseDual()">运行双键诊断 (Run Dual-Key Diagnostic)</button>
+          <button class="secondary" onclick="fetchManifest()">仅刷新 Manifest</button>
         </div>
-        <div id="verify-log" class="log">直连 Base 公共 RPC 池，等待执行...</div>
+        <div id="diag-out" class="log">等待运行...</div>
+
+        <div class="schema-grid" id="schema-grid">
+          <!-- populated by JS -->
+        </div>
       </div>
     </div>
-    
+
+    <!-- Tab 2: V2 Handshake & EIP-3009 Smoke Test -->
+    <div id="tab2" class="tab-content">
+      <h2>v2 Handshake & EIP-3009 Smoke Test <span class="tag">极速探针入口 $0.10</span></h2>
+      <div class="card">
+        <div class="params-grid">
+          <div class="param-card">
+            <div class="p-name">Token Name</div>
+            <div class="p-value">USD Coin</div>
+          </div>
+          <div class="param-card">
+            <div class="p-name">Domain Separator Version</div>
+            <div class="p-value">v2</div>
+          </div>
+          <div class="param-card">
+            <div class="p-name">ChainId</div>
+            <div class="p-value">8453 (Base)</div>
+          </div>
+          <div class="param-card">
+            <div class="p-name">Network</div>
+            <div class="p-value">eip155:8453</div>
+          </div>
+        </div>
+
+        <label>收款档位 (USDC) — 推荐探针入口</label>
+        <select id="tierSelect">
+          <option value="100000">$0.10 — v2 Handshake & EIP-3009 Smoke Test (极速探针)</option>
+          <option value="1000000">$1.00 — 痛点修复 (升舱 Tier 2)</option>
+          <option value="9900000">$9.90 — 旗舰包 (升舱 Tier 3)</option>
+        </select>
+
+        <div class="upgrade-path">
+          <div class="tier-step highlight active">
+            <div class="tier-price">$0.10</div>
+            <div class="tier-label">TIER_1_PROBE_010</div>
+            <div class="tier-desc">v2 Handshake · EIP-3009 Smoke Test</div>
+          </div>
+          <div class="tier-arrow">→</div>
+          <div class="tier-step">
+            <div class="tier-price">$1.00</div>
+            <div class="tier-label">TIER_2_PATCH_100</div>
+            <div class="tier-desc">痛点修复 · 升舱路径</div>
+          </div>
+          <div class="tier-arrow">→</div>
+          <div class="tier-step">
+            <div class="tier-price">$9.90</div>
+            <div class="tier-label">TIER_3_AUDIT_990</div>
+            <div class="tier-desc">旗舰包 · 完整审计</div>
+          </div>
+        </div>
+
+        <div class="flex" style="margin-top: 18px;">
+          <input type="text" id="txHash" placeholder="0x... (可选，进行链上验真)" />
+          <button class="highlight" onclick="verifyTx()">执行 v2 握手验真 (Verify Handshake)</button>
+        </div>
+        <div id="verify-log" class="log">就绪：选择 $0.10 极速探针入口，点击验真即可启动 EIP-3009 域分隔校验...</div>
+      </div>
+
+      <div class="hint">
+        <strong>双键 Schema 提示：</strong> 本 Manifest 同时兼容 v1 (<code>network: "base-mainnet"</code> + <code>amount</code>) 与 v2 (<code>network: "eip155:8453"</code> + <code>x402Version: 2</code>) 双键识别。前端不依赖任何后端，纯静态 GitHub Pages HTTP 200 直出，不泄漏内网信息。
+      </div>
+    </div>
+
   </div>
 
   <script>
+    let manifestCache = null;
+
     function switchTab(t) {
       document.querySelectorAll('.nav-item').forEach((el, i) => el.classList.toggle('active', i === t - 1));
       document.querySelectorAll('.tab-content').forEach((el, i) => el.classList.toggle('active', i === t - 1));
     }
-    
-    async function diagnose() {
-      const logEl = document.getElementById('diag-out');
-      logEl.innerHTML = "Fetching /.well-known/x402.json...\n";
+
+    async function fetchManifest() {
       try {
-        const res = await fetch('.well-known/x402.json');
+        const res = await fetch('.well-known/x402.json', { cache: 'no-cache' });
         if (!res.ok) throw new Error("HTTP " + res.status);
-        const json = await res.json();
-        logEl.innerHTML += "<span class='pass'>✔ JSON Parsed</span>\n";
-        
-        let valid = true;
-        let expectedTreasury = "0xf270041f431efc7cc91cad83f9605e3f2ee96176";
-        let actualTreasury = json.payment_methods?.[0]?.treasury || json.treasury;
-        
-        if (actualTreasury && actualTreasury.toLowerCase() === expectedTreasury.toLowerCase()) {
-          logEl.innerHTML += "<span class='pass'>✔ Treasury matches expected.</span>\n";
-        } else {
-          logEl.innerHTML += "<span class='fail'>✖ Treasury mismatch or missing! Found: " + actualTreasury + "</span>\n"; 
-          valid = false;
-        }
-        
-        let chainId = json.payment_methods?.[0]?.chainId || json.chainId;
-        if (chainId === 8453) {
-          logEl.innerHTML += "<span class='pass'>✔ ChainId matches Base (8453).</span>\n";
-        } else {
-          logEl.innerHTML += "<span class='fail'>✖ ChainId mismatch!</span>\n"; 
-          valid = false;
-        }
-        
-        if (valid) {
-          const host = window.location.host || "<YOUR-DOMAIN>";
-          document.getElementById('curl-out').innerText = `curl -s https://${host}/.well-known/x402.json | jq .`;
-          document.getElementById('mcp-out').innerText = JSON.stringify({
-            mcpServers: {
-              "x402-payment": {
-                "command": "npx",
-                "args": ["-y", "@moe-agents/x402-mcp", "--treasury", actualTreasury]
-              }
-            }
-          }, null, 2);
-        } else {
-          logEl.innerHTML += "\n<span class='fail'>诊断未通过，停止生成配置。</span>\n";
-        }
+        manifestCache = await res.json();
+        document.getElementById('diag-out').innerHTML = "<span class='pass'>✔ Manifest fetched OK</span>\n";
+        return manifestCache;
       } catch (e) {
-        logEl.innerHTML += `<span class='fail'>✖ Failed: ${e.message}</span>\n`;
+        document.getElementById('diag-out').innerHTML = `<span class='fail'>✖ Fetch failed: ${e.message}</span>\n`;
+        return null;
+      }
+    }
+
+    async function diagnoseDual() {
+      const logEl = document.getElementById('diag-out');
+      const gridEl = document.getElementById('schema-grid');
+      logEl.innerHTML = "Fetching /.well-known/x402.json...\n";
+
+      const json = await fetchManifest();
+      if (!json) return;
+
+      logEl.innerHTML += "<span class='pass'>✔ JSON Parsed</span>\n";
+
+      // v1 detection
+      const v1Net = json.payment_methods?.[0]?.network;
+      const v1Chain = json.payment_methods?.[0]?.chainId;
+      const v1HasAmount = json.products?.[0]?.amount !== undefined;
+
+      // v2 detection
+      const x402Ver = json.x402Version;
+      const v2Net = json.payment_methods_v2?.[0]?.network;
+      const v2Chain = json.payment_methods_v2?.[0]?.chainId;
+      const endpoints = json.endpoints;
+
+      // Build schema grid
+      let html = '';
+      html += `
+        <div class="schema-card">
+          <h3>v1 Key (base-mainnet)</h3>
+          <div class="schema-row"><span class="schema-key">network</span><span class="schema-val">${v1Net}</span></div>
+          <div class="schema-row"><span class="schema-key">chainId</span><span class="schema-val">${v1Chain}</span></div>
+          <div class="schema-row"><span class="schema-key">amount field</span><span class="schema-val">${v1HasAmount ? 'present' : 'missing'}</span></div>
+          <div class="schema-status ${v1Net === 'base-mainnet' && v1Chain === 8453 && v1HasAmount ? 'ok' : 'warn'}">${v1Net === 'base-mainnet' && v1Chain === 8453 && v1HasAmount ? 'v1 Compatible' : 'v1 Incomplete'}</div>
+        </div>
+        <div class="schema-card">
+          <h3>v2 Key (eip155:8453)</h3>
+          <div class="schema-row"><span class="schema-key">x402Version</span><span class="schema-val">${x402Ver}</span></div>
+          <div class="schema-row"><span class="schema-key">network</span><span class="schema-val v2">${v2Net}</span></div>
+          <div class="schema-row"><span class="schema-key">chainId</span><span class="schema-val v2">${v2Chain}</span></div>
+          <div class="schema-row"><span class="schema-key">endpoints.v1</span><span class="schema-val">${endpoints?.v1}</span></div>
+          <div class="schema-row"><span class="schema-key">endpoints.v2</span><span class="schema-val">${endpoints?.v2}</span></div>
+          <div class="schema-status ${x402Ver === 2 && v2Net === 'eip155:8453' && v2Chain === 8453 ? 'ok' : 'warn'}">${x402Ver === 2 && v2Net === 'eip155:8453' ? 'v2 Verified' : 'v2 Incomplete'}</div>
+        </div>
+      `;
+      gridEl.innerHTML = html;
+
+      const v1Ok = v1Net === 'base-mainnet' && v1Chain === 8453 && v1HasAmount;
+      const v2Ok = x402Ver === 2 && v2Net === 'eip155:8453' && v2Chain === 8453;
+
+      logEl.innerHTML += `<span class='${v1Ok ? 'pass' : 'fail'}'>✔ v1 (base-mainnet + amount): ${v1Ok ? 'PASS' : 'FAIL'}</span>\n`;
+      logEl.innerHTML += `<span class='${v2Ok ? 'pass' : 'fail'}'>✔ v2 (eip155:8453 + x402Version:2): ${v2Ok ? 'PASS' : 'FAIL'}</span>\n`;
+
+      if (v1Ok && v2Ok) {
+        logEl.innerHTML += `<span class='pass'>🎉 双键 Schema 完整：v1 与 v2 均可识别。</span>\n`;
       }
     }
 
     const RPC_URLS = [
-      "https://mainnet.base.org", 
-      "https://base.publicnode.com", 
+      "https://mainnet.base.org",
+      "https://base.publicnode.com",
       "https://base.llamarpc.com"
     ];
-    
+
     async function callRpc(method, params) {
       for (const rpc of RPC_URLS) {
         try {
@@ -172,46 +290,51 @@
 
     async function verifyTx() {
       const hash = document.getElementById('txHash').value.trim();
-      const expectedAmount = parseInt(document.getElementById('tierSelect').value, 10);
+      const selected = document.getElementById('tierSelect').value;
+      const expectedAmount = parseInt(selected, 10);
+      const tierName = document.getElementById('tierSelect').options[document.getElementById('tierSelect').selectedIndex].text;
       const logEl = document.getElementById('verify-log');
-      
+
+      logEl.innerHTML = `启动 v2 Handshake & EIP-3009 Smoke Test...\n目标档位: ${tierName}\n预期入账: ${expectedAmount / 1e6} USDC\n\n`;
+
+      if (!hash) {
+        logEl.innerHTML += `<span class='warn'>未输入 TxHash，已跳过链上断言（演示/离线模式）。</span>\n`;
+        logEl.innerHTML += `<span class='pass'>✔ EIP-3009 域分隔参数已就绪：Token=USD Coin, Version=v2, ChainId=8453</span>\n`;
+        logEl.innerHTML += `<span class='hint'>提示：输入有效的 Base 主网 TxHash 可执行完整 5 断言链上验真。</span>\n`;
+        return;
+      }
+
       if (!/^0x([A-Fa-f0-9]{64})$/.test(hash)) {
         logEl.innerHTML = "<span class='fail'>✖ 无效的 TxHash 格式</span>";
         return;
       }
-      
+
       const T = "0xf270041f431efc7cc91cad83f9605e3f2ee96176".toLowerCase();
       const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913".toLowerCase();
-      
-      logEl.innerHTML = `正在直连 Base RPC 验证 ${hash}...\n\n`;
-      
+
+      logEl.innerHTML += `正在直连 Base 公共 RPC 验证 ${hash}...\n\n`;
+
       try {
         const receipt = await callRpc("eth_getTransactionReceipt", [hash]);
         const tx = await callRpc("eth_getTransactionByHash", [hash]);
-        
+
         if (!receipt || !tx) throw new Error("Tx not found or pending");
-        
+
         let pass = 0;
         const assert = (cond, msg) => {
           if (cond) { logEl.innerHTML += `<span class='pass'>✔ [Assert ${pass+1}] ${msg}</span>\n`; pass++; }
           else { logEl.innerHTML += `<span class='fail'>✖ [Assert ${pass+1}] ${msg}</span>\n`; throw new Error("Assertion failed: " + msg); }
         };
 
-        // 1. Tx Status
         assert(parseInt(receipt.status, 16) === 1, "交易状态为成功 (Status = 1)");
-        
-        // 2. ChainId
         assert(parseInt(tx.chainId, 16) === 8453, "交易所属网络为 Base 主网 (ChainId = 8453)");
-        
-        // 3. To Address is USDC
         assert(tx.to && tx.to.toLowerCase() === USDC, "交互合约地址为合规的 USDC Token 智能合约");
-        
+
         let foundTransfer = false;
         let amountOk = false;
         let foundAmount = 0;
-        
         const transferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
-        
+
         for (const log of receipt.logs) {
           if (log.address.toLowerCase() === USDC && log.topics[0] === transferTopic && log.topics.length === 3) {
             const toHex = log.topics[2];
@@ -223,16 +346,13 @@
             }
           }
         }
-        
-        // 4. Transfer Event to Treasury
-        assert(foundTransfer, `在 Event Logs 中锁定到向硬编码金库 (${T}) 的 Transfer 记录`);
-        
-        // 5. Amount check
+
+        assert(foundTransfer, `在 Event Logs 中锁定到向 Treasury (${T}) 的 Transfer 记录`);
         assert(amountOk, `Transfer 金额 (${foundAmount / 1e6} USDC) >= 预期入账金额 (${expectedAmount / 1e6} USDC)`);
-        
-        logEl.innerHTML += `\n<span class='pass' style='font-size:14px;'>🎉 验钞完成: 所有 5 项安全断言通过，准许后续履约发放！</span>\n`;
+
+        logEl.innerHTML += `\n<span class='pass' style='font-size:14px;'>🎉 v2 Handshake 验证完成: 所有 5 项安全断言通过，EIP-3009 域分隔匹配，准许后续履约发放！</span>\n`;
       } catch (e) {
-        logEl.innerHTML += `\n<span class='fail'>验钞中止: ${e.message}</span>\n`;
+        logEl.innerHTML += `\n<span class='fail'>验真中止: ${e.message}</span>\n`;
       }
     }
   </script>

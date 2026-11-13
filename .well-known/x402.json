@@ -2,6 +2,11 @@
   "version": "1.0.0",
   "organization": "Moe Agents",
   "description": "Base USDC payment manifests for Moe Agents tasks.",
+  "x402Version": 2,
+  "endpoints": {
+    "v1": "/.well-known/x402.json",
+    "v2": "/.well-known/x402.json"
+  },
   "payment_methods": [
     {
       "network": "base-mainnet",
@@ -11,24 +16,42 @@
       "treasury": "0xf270041f431efc7cc91cad83f9605e3f2ee96176"
     }
   ],
+  "payment_methods_v2": [
+    {
+      "x402Version": 2,
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "chainId": 8453,
+      "asset": "eip155:8453/erc20:0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "payTo": "0xf270041f431efc7cc91cad83f9605e3f2ee96176"
+    }
+  ],
   "products": [
     {
       "id": "tier1-probe",
       "name": "极速探针 ($0.10)",
       "price_usdc": 0.1,
-      "amount": "100000"
+      "amount": "100000",
+      "tierId": "TIER_1_PROBE_010",
+      "skuId": "TIER_1_PROBE_010",
+      "upgrade_available": true,
+      "recommended_sku": "x402_flaw_patch_100"
     },
     {
       "id": "tier2-patch",
       "name": "痛点修复 ($1.00)",
       "price_usdc": 1.0,
-      "amount": "1000000"
+      "amount": "1000000",
+      "tierId": "TIER_2_PATCH_100",
+      "skuId": "TIER_2_PATCH_100"
     },
     {
       "id": "tier3-flagship",
       "name": "旗舰包 ($9.90)",
       "price_usdc": 9.9,
-      "amount": "9900000"
+      "amount": "9900000",
+      "tierId": "TIER_3_AUDIT_990",
+      "skuId": "TIER_3_AUDIT_990"
     }
   ]
 }
